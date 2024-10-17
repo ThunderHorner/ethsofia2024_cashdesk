@@ -34,6 +34,5 @@ def print_test_receipt(port='/dev/ttyACM0', baud=115200, timeout=0.2):
             ser.write(font_commands[0])
 
         ser.write(b'\n' * 5)
-        print(ser.read(100))
 
 print_test_receipt()
