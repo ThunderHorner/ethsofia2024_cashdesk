@@ -1,16 +1,14 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS  # Import CORS
+from flask_cors import CORS
 import serial
 import datetime
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for all routes
+CORS(app)
 
-# Format item lines for the receipt
 def format_item_line(name, price, width=48):
     return f'{name}{" " * (width - len(name) - len(price))}{price}'
 
-# Endpoint to receive receipt data and print it
 @app.route('/print-receipt', methods=['POST'])
 def print_receipt():
     try:
@@ -19,20 +17,17 @@ def print_receipt():
         items = data.get('items')
         total = data.get('total')
 
-        # Create receipt structure
         receipt_data = [
             {'text': {'fw': 3, 'content': f'Order number: {order_number}'.center(22)}},
             {'text': {'fw': 1, 'content': f'{datetime.datetime.now().strftime("%d.%m.%Y %H:%M:%S")}' }},
         ]
 
-        # Add each item to the receipt
         for item in items:
             receipt_data.append({'item': {'name': item['ProductName'], 'price': str(item['Price'])}})
 
         receipt_data.append({'text': {'fw': 3, 'content': '-' * 24}})
         receipt_data.append({'text': {'fw': 3, 'content': f'Total: {total}'.rjust(22)}})
 
-        # Send receipt to printer
         print_to_printer(receipt_data)
 
         return jsonify({"message": "Receipt printed successfully"}), 200
@@ -41,14 +36,13 @@ def print_receipt():
         print(f"Error printing receipt: {e}")
         return jsonify({"error": "Failed to print receipt"}), 500
 
-# Function to print receipt to serial printer
-def print_to_printer(data, port='/dev/ttyACM0', baud=115200, timeout=0.2):
+def print_to_printer(data, port='/tmp/ttyV0', baud=115200, timeout=0.2):  # Changed port to /tmp/ttyV0
     with serial.Serial(port, baud, timeout=timeout) as ser:
         font_commands = {
-            0: b'\x1B\x21\x00',  # Normal
-            1: b'\x1B\x21\x00',  # Normal (small)
-            2: b'\x1B\x21\x10',  # Double height
-            3: b'\x1B\x21\x30',  # Large (double width and height)
+            0: b'\x1B\x21\x00',
+            1: b'\x1B\x21\x00',
+            2: b'\x1B\x21\x10',
+            3: b'\x1B\x21\x30',
         }
 
         for item in data:
