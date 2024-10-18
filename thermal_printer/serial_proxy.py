@@ -1,71 +1,109 @@
 import re
 import serial
-from bleach import clean
 import socketio
+from serial.tools import list_ports
 
-# Serial setup
-ser = serial.Serial('/tmp/ttyV1', 115200)  # Adjust baud rate if needed
-
-print("Listening on /tmp/ttyV1...")
-
-# Variables to store extracted data
-order_id = None
-currency = "BGN"
-price = None
-product_name = None
+# Constants
+SERIAL_PORT = '/tmp/ttyV1'
+BAUD_RATE = 115200
+PRINTER_PORT = '/dev/ttyACM0'
+SOCKET_IO_SERVER = 'http://localhost:5000'
+DEFAULT_CURRENCY = "BGN"
 
 # Regex pattern to capture product name and price
-pattern = r'^([A-Za-z\s]+)[ ]+(\d{1,3}(?:\.\d{2}))$'
 
-# Create a Socket.IO client instance
-sio = socketio.Client()
+PRODUCT_PATTERN = r'^([\w\s]+)\s+(\d{1,3}\.\d{2})$'
 
-# Event handler for connecting to the server
-@sio.event
-def connect():
-    print("Connected to the server")
 
-# Event handler for receiving messages from the server
-@sio.on('message')
-def on_message(data):
-    print(f"Message received: {data}")
 
-# Event handler for disconnecting from the server
-@sio.event
-def disconnect():
-    print("Disconnected from the server")
+class OrderProcessor:
+    def __init__(self):
+        self.order_id = None
+        self.currency = DEFAULT_CURRENCY
+        self.price = None
+        self.product_name = None
+        self.sio = socketio.Client()
+        self.setup_socket_io()
 
-# Connect to the Socket.IO server
-sio.connect('http://localhost:5000')
+    def setup_socket_io(self):
+        @self.sio.event
+        def connect():
+            print("Connected to the server")
 
-def send_data(csv):
-    # Send the CSV data via Socket.IO
-    sio.emit('message', csv)
+        @self.sio.on('message')
+        def on_message(data):
+            print(f"Message received: {data}")
 
-while True:
-    if ser.in_waiting > 0:
-        line = ser.readline()
-        clean_line = line.decode('utf-8').rstrip()
+        @self.sio.event
+        def disconnect():
+            print("Disconnected from the server")
 
-        # Capture order number
+        self.sio.connect(SOCKET_IO_SERVER)
+
+    def process_line(self, line):
+        clean_line = line.decode('utf-8').strip()
+        print(f"line {line}")
+        print(f"line {clean_line}")
         if 'Order number' in clean_line:
-            order_id = clean_line.split('Order number:')[1].strip()
-            price = None
-            product_name = None
-            print(f"Order ID: {order_id}")
+            self.order_id = clean_line.split('Order number:')[1].strip()
+            self.price = None
+            self.product_name = None
+            # print(f"Order ID: {self.order_id}")
+        else:
+            result = re.search(PRODUCT_PATTERN, 'Product  123            10.00')
 
-        # Match product name and price
-        match = re.match(pattern, clean_line)
-        if match:
-            product_name = match.group(1).strip()
-            price = float(match.group(2))
-            print(f"Product Name: {product_name}, Price: {price} {currency}")
+            if result:
+                product_name = result.group(1).strip()  # First group is the product name
+                price = result.group(2)  # Second group is the price
 
-        # Forward the line to the printer
-        with serial.Serial('/dev/ttyACM0', 115200, timeout=.1) as printer:
-            printer.write(line)
+                # print(f'Product Name: "{product_name}", Price: {price}')
+                # print(product_line)
+                self.product_name = product_name
+                self.price = price
+                # print(f"Product Name: {self.product_name}, Price: {self.price} {self.currency}")
+                self.send_data(self.order_id, self.price, self.product_name)
 
-        # Send data when both product name and price are available
-        if product_name and price:
-            csv = ','.join(map(str, [order_id, currency, price, product_name]))
-            send_data(csv)
+        self.forward_to_printer(line)
+
+    def send_data(self, order_id, price, product_name):
+        # if self.product_name and self.price:
+        csv = ','.join(map(str, [order_id, self.currency, price, product_name]))
+        self.sio.emit('message', csv)
+
+    @staticmethod
+    def forward_to_printer(line):
+        # return
+        try:
+            with serial.Serial(PRINTER_PORT, BAUD_RATE, timeout=.1) as printer:
+                printer.write(line)
+        except serial.SerialException as e:
+            print(f"Error forwarding to printer: {e}")
+
+def find_serial_port(port_hint):
+    available_ports = list_ports.comports()
+    for port in available_ports:
+        if port_hint in port.device:
+            return port.device
+    return None
+
+def main():
+    serial_port = find_serial_port(SERIAL_PORT) or SERIAL_PORT
+    print(f"Listening on {serial_port}...")
+
+    processor = OrderProcessor()
+
+    try:
+        with serial.Serial(serial_port, BAUD_RATE, timeout=2) as ser:
+            while True:
+                if ser.in_waiting > 0:
+                    line = ser.readline()
+                    processor.process_line(line)
+    except serial.SerialException as e:
+        print(f"Error opening serial port: {e}")
+    except KeyboardInterrupt:
+        print("Program terminated by user")
+    finally:
+        processor.sio.disconnect()
+
+if __name__ == "__main__":
+    main()

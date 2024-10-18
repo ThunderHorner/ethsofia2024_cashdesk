@@ -5,9 +5,9 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 function App() {
     // Mock data for products
     const products = [
-        { barcodeId: '123456', ProductName: 'Product A', Price: 10.0 },
-        { barcodeId: '234567', ProductName: 'Product B', Price: 15.5 },
-        { barcodeId: '345678', ProductName: 'Product C', Price: 7.25 },
+        { barcodeId: '123456', ProductName: 'Product A', Price: "10.00" },
+        { barcodeId: '234567', ProductName: 'Product B', Price: "15.50" },
+        { barcodeId: '345678', ProductName: 'Product C', Price: "7.25" },
     ];
 
     const [scannedProducts, setScannedProducts] = useState([]);
@@ -17,7 +17,7 @@ function App() {
     // Function to print receipt via Flask API
     const printReceipt = async () => {
         const receiptData = {
-            orderNumber: Math.floor(Math.random() * 1000), // Mock order number
+            orderNumber: Math.floor(Math.random() * 1000).toString(), // Mock order number
             items: scannedProducts,
             total: total.toFixed(2)
         };
@@ -50,7 +50,7 @@ function App() {
         const product = products.find(p => p.barcodeId === barcodeInput);
         if (product) {
             setScannedProducts([...scannedProducts, product]);
-            setTotal(total + product.Price);
+            setTotal(total + parseFloat(product.Price));
             setBarcodeInput('')
         }
     }, [barcodeInput]);
@@ -82,7 +82,7 @@ function App() {
                 {scannedProducts.map((product, index) => (
                     <tr key={index}>
                         <td>{product.ProductName}</td>
-                        <td>{product.Price.toFixed(2)}</td>
+                        <td>{product.Price}</td>
                     </tr>
                 ))}
                 </tbody>
