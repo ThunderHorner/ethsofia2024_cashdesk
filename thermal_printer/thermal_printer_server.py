@@ -24,6 +24,10 @@ def print_receipt():
 
         for item in items:
             receipt_data.append({'item': {'name': item['ProductName'], 'price': str(item['Price'])}})
+            if item.get('RequiresWarranty'):
+                receipt_data.append({'text': {'content':format_item_line('Warranty until', item.get('WarrantyEndDate'))}})
+                receipt_data.append({'text': {'content':format_item_line('Serial Number:', item.get('SerialNumber'))}})
+
 
         receipt_data.append({'text': {'fw': 3, 'content': '-' * 24}})
         receipt_data.append({'text': {'fw': 3, 'content': f'Total: {total}'.rjust(22)}})
@@ -47,8 +51,9 @@ def print_to_printer(data, port='/tmp/ttyV0', baud=115200, timeout=0.2):  # Chan
 
         for item in data:
             if 'text' in item:
-                ser.write(font_commands[item['text']['fw']])
+                ser.write(font_commands[item['text'].get('fw', 0)])
                 ser.write(item['text']['content'].encode('utf-8'))
+                ser.write(b'\n')
             elif 'item' in item:
                 ser.write(font_commands[0])
                 content = format_item_line(item['item']['name'], item['item']['price'])

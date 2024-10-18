@@ -6,7 +6,7 @@ cleanup() {
     wait $cashdesk_pid $printer_server_pid 2>/dev/null
     echo "All services stopped."
 }
-
+. bin/activate
 trap cleanup EXIT
 
 echo "Starting services..."
