@@ -51,7 +51,7 @@ function App() {
         const product = products.find(p => p.barcodeId === barcodeInput);
         if (product) {
             if (product.RequiresWarranty) {
-                const serialNumber = '123123123';//prompt(`Please enter the serial number for ${product.ProductName}:`);
+                const serialNumber = prompt(`Please enter the serial number for ${product.ProductName}:`);
                 if (serialNumber) {
                     product.SerialNumber = serialNumber;
                     const warrantyEndDate = add(new Date(), product.Delta);
