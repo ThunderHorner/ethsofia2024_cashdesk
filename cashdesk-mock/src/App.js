@@ -12,7 +12,7 @@ function App() {
     ];
 
     const [scannedProducts, setScannedProducts] = useState([]);
-    const [barcodeInput, setBarcodeInput] = useState('8434344012481');
+    const [barcodeInput, setBarcodeInput] = useState('');
     const [total, setTotal] = useState(0);
     const [serialNumberInput, setSerialNumberInput] = useState('');
 
@@ -65,7 +65,7 @@ function App() {
             setTotal(total + parseFloat(product.Price));
             setBarcodeInput('');
         }
-    }, []);
+    }, [barcodeInput]);
 
     return (
         <div className="App container mt-5">
