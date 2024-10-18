@@ -6,8 +6,8 @@ import { add } from 'date-fns';
 function App() {
     // Mock data for products
     const products = [
-        { barcodeId: '8434344012481', ProductName: 'Very nice thermos', Price: "10.00", RequiresWarranty: true, Delta: { years: 2 } },
-        { barcodeId: '234567', ProductName: 'Product B', Price: "15.50" },
+        { barcodeId: '12341412', ProductName: 'Very nice thermos', Price: "10.00", RequiresWarranty: true, Delta: { years: 2 } },
+        { barcodeId: '8434344012481', ProductName: 'Product B', Price: "15.50" },
         { barcodeId: '345678', ProductName: 'Product C', Price: "7.25" },
     ];
 
