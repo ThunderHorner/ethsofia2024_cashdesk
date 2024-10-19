@@ -1,17 +1,7 @@
 #!/bin/bash
 
-# Activate the virtual environment
-source bin/activate
+# Open the first tab and run the first command
+gnome-terminal --tab --title="Init Virtual Ports" -- bash -c "sh thermal_printer/init_virtual_ports.sh; exec bash"
 
-# Trap for Ctrl+C
-trap "kill 0" EXIT
-
-# Run the WebSocket server in the background
-./thermal_printer/init_virtual_ports.sh &
-sleep 5
-
-# Run the run.sh script in the background
-./run.sh &
-
-# Wait for all processes to finish
-wait
+# Open the second tab and run the second command in the same terminal window
+gnome-terminal --tab --title="Run Script" -- bash -c "./run.sh; exec bash"
